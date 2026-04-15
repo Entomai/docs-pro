@@ -562,7 +562,7 @@ $(function () {
         syncTreeFromDom(false)
 
         const parentNode = getCurrentNode()
-        const parentId = parentNode && parentNode.node_type === 'doc' ? parentNode.id : null
+        const parentId = null
 
         state.nodes.push({
             id: `tmp-${state.tempCounter++}`,
