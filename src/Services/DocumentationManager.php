@@ -438,12 +438,7 @@ class DocumentationManager
             ]);
         }
 
-        if ($parent->isTitle()) {
-            throw ValidationException::withMessages([
-                'parent_id' => trans('plugins/docs-pro::docs-pro.parent_invalid'),
-            ]);
-        }
-
+        // Removed title validation block to allow nesting
         if ($document && $document->exists) {
             if ((int) $parent->getKey() === (int) $document->getKey()) {
                 throw ValidationException::withMessages([
@@ -1726,12 +1721,8 @@ class DocumentationManager
         foreach ($nodes as $node) {
             $nodeType = Arr::get($node, 'node_type', Doc::NODE_TYPE_DOC);
             $children = $this->normalizeImportedTree((array) Arr::get($node, 'children', []));
-            $node['children'] = $nodeType === Doc::NODE_TYPE_DOC ? $children : [];
+            $node['children'] = in_array($nodeType, [Doc::NODE_TYPE_DOC, Doc::NODE_TYPE_TITLE]) ? $children : [];
             $normalized[] = $node;
-
-            if ($nodeType === Doc::NODE_TYPE_TITLE) {
-                $normalized = array_merge($normalized, $children);
-            }
         }
 
         return $normalized;
@@ -1752,12 +1743,8 @@ class DocumentationManager
             $children = $this->normalizeEditorTree((array) Arr::get($item, 'children', []), $nodesById);
             $normalized[] = [
                 'id' => $id,
-                'children' => $nodeType === Doc::NODE_TYPE_DOC ? $children : [],
+                'children' => in_array($nodeType, [Doc::NODE_TYPE_DOC, Doc::NODE_TYPE_TITLE]) ? $children : [],
             ];
-
-            if ($nodeType === Doc::NODE_TYPE_TITLE) {
-                $normalized = array_merge($normalized, $children);
-            }
         }
 
         return $normalized;

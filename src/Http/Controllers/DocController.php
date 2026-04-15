@@ -270,12 +270,8 @@ class DocController extends BaseController
 
                 $items[] = [
                     'document' => $document,
-                    'children' => $document->isDoc() ? $children : [],
+                    'children' => in_array($document->node_type, [Doc::NODE_TYPE_DOC, Doc::NODE_TYPE_TITLE]) ? $children : [],
                 ];
-
-                if ($document->isTitle()) {
-                    $items = [...$items, ...$children];
-                }
             }
 
             return $items;

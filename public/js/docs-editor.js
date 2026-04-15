@@ -99,7 +99,7 @@ $(function () {
                     return
                 }
 
-                visit(node.id, node.node_type === 'doc' ? node.id : targetParentId)
+                visit(node.id, ['doc', 'title'].includes(node.node_type) ? node.id : targetParentId)
             })
         }
 
