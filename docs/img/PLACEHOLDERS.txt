@@ -1,0 +1,24 @@
+docs-pro documentation image checklist
+======================================
+
+This file is only a human checklist.
+It is ignored by the Markdown importer.
+
+Included screenshots:
+
+- portal-overview.png
+- admin-quick-actions.png
+- products-table.png
+- product-form.png
+- editor-tree-overview.png
+- editor-drag-drop.png
+- editor-content-tab.png
+- editor-preview-tab.png
+- editor-save-state.png
+- import-screen.png
+- export-action.png
+- public-product-selector.png
+- public-search-sidebar.png
+- public-mobile-sidebar.png
+- public-on-this-page.png
+- public-article-actions.png

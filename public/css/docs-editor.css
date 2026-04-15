@@ -1,0 +1,374 @@
+.docs-pro-editor-page {
+    max-width: 1540px;
+    margin: 0 auto;
+}
+
+.docs-pro-editor-card {
+    overflow: hidden;
+}
+
+.docs-pro-editor-structure-card .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.docs-pro-editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.docs-pro-editor-empty {
+    padding: 1.25rem;
+    border: 1px dashed color-mix(in srgb, var(--bb-border-color) 88%, transparent);
+    border-radius: 1rem;
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bb-bg-surface-secondary, var(--bb-tertiary-bg)) 82%, transparent),
+        color-mix(in srgb, var(--bb-bg-surface, var(--bb-body-bg)) 96%, transparent)
+    );
+}
+
+.docs-pro-editor-tree {
+    padding: 0.1rem 0 0.35rem;
+}
+
+.docs-pro-editor-tree-shell {
+    max-height: calc(100vh - 23rem);
+    overflow-y: auto;
+    padding-right: 0.2rem;
+}
+
+.docs-pro-editor-tree .dd-list {
+    margin: 0;
+    padding-left: 0.85rem;
+}
+
+.docs-pro-editor-tree > .dd-list {
+    padding-left: 0;
+}
+
+.docs-pro-editor-tree-item {
+    margin-bottom: 0.45rem;
+}
+
+.docs-pro-editor-tree-item.is-selected .docs-pro-editor-tree-button {
+    border-color: rgba(59, 130, 246, 0.55);
+    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.12);
+}
+
+.docs-pro-editor-tree-row {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+}
+
+.docs-pro-editor-tree-handle {
+    position: absolute;
+    top: 50%;
+    left: 0.55rem;
+    z-index: 2;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border: 0;
+    border-radius: 0.45rem;
+    background: transparent;
+    cursor: move;
+    opacity: 0.6;
+}
+
+.docs-pro-editor-tree-grip {
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 0.25rem;
+    background:
+        radial-gradient(circle, rgba(100, 116, 139, 0.72) 1px, transparent 1px) 0 0 / 0.4rem 0.4rem;
+}
+
+.docs-pro-editor-tree-button {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem 0.8rem 2.15rem;
+    border: 1px solid var(--bb-border-color);
+    border-radius: 0.75rem;
+    background: var(--bb-bg-surface, var(--bb-body-bg));
+    color: var(--bb-body-color);
+    text-align: left;
+    cursor: pointer;
+}
+
+.docs-pro-editor-tree-static {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem 0.8rem 2.15rem;
+    border: 1px solid var(--bb-border-color);
+    border-radius: 0.75rem;
+    background: var(--bb-bg-surface-secondary, var(--bb-tertiary-bg));
+    color: var(--bb-body-color);
+}
+
+.docs-pro-editor-tree-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+}
+
+.docs-pro-editor-tree-copy small {
+    color: var(--bb-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.docs-pro-editor-tree-title {
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--bb-body-color);
+}
+
+.docs-pro-editor-tree-separator {
+    display: block;
+    width: 100%;
+    margin: 0.8rem 0 0.6rem;
+    border-top: 1px solid rgba(100, 116, 139, 0.35);
+}
+
+.docs-pro-editor-tree-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
+.docs-pro-editor-tree-action {
+    align-self: center;
+    min-width: 2rem;
+    margin-left: 0.4rem;
+    padding: 0.25rem 0.45rem;
+    border-radius: 0.5rem;
+    line-height: 1;
+}
+
+.docs-pro-editor-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.docs-pro-editor-tablist {
+    display: inline-flex;
+    gap: 0.5rem;
+    padding: 0.3rem;
+    border: 1px solid var(--bb-border-color);
+    border-radius: 999px;
+    background: var(--bb-bg-surface-secondary, var(--bb-tertiary-bg));
+}
+
+.docs-pro-editor-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.9rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--bb-secondary);
+    font-weight: 600;
+}
+
+.docs-pro-editor-tab.is-active {
+    background: var(--bb-bg-surface, var(--bb-body-bg));
+    color: var(--bb-body-color);
+    box-shadow: var(--bb-box-shadow-sm);
+}
+
+.docs-pro-editor-tab small {
+    font-weight: 500;
+    color: var(--bb-secondary);
+}
+
+.docs-pro-editor-pane.is-hidden {
+    display: none;
+}
+
+.docs-pro-editor-field-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.4rem;
+}
+
+.docs-pro-editor-field-head .form-label {
+    margin-bottom: 0;
+}
+
+.docs-pro-editor-field-head span {
+    color: var(--bb-secondary);
+    font-size: 0.875rem;
+}
+
+.docs-pro-editor-textarea {
+    min-height: 42rem;
+    height: 70vh;
+    resize: vertical;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    line-height: 1.6;
+}
+
+.docs-pro-editor-preview-wrap {
+    min-height: 42rem;
+    padding: 1rem;
+    border: 1px solid var(--bb-border-color);
+    border-radius: 1rem;
+    background: var(--bb-bg-surface, var(--bb-body-bg));
+}
+
+.docs-pro-editor-preview {
+    line-height: 1.7;
+    color: var(--bb-body-color);
+}
+
+.docs-pro-editor-preview > *:last-child {
+    margin-bottom: 0;
+}
+
+.docs-pro-editor-preview h1,
+.docs-pro-editor-preview h2,
+.docs-pro-editor-preview h3,
+.docs-pro-editor-preview h4,
+.docs-pro-editor-preview h5,
+.docs-pro-editor-preview h6 {
+    margin-top: 0;
+    margin-bottom: 0.85rem;
+    color: var(--bb-body-color);
+}
+
+.docs-pro-editor-preview p,
+.docs-pro-editor-preview li,
+.docs-pro-editor-preview dt,
+.docs-pro-editor-preview dd,
+.docs-pro-editor-preview td,
+.docs-pro-editor-preview th {
+    color: inherit;
+}
+
+.docs-pro-editor-preview a {
+    color: var(--bb-link-color);
+}
+
+.docs-pro-editor-preview hr {
+    border-color: var(--bb-border-color);
+}
+
+.docs-pro-editor-preview table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+}
+
+.docs-pro-editor-preview table th,
+.docs-pro-editor-preview table td {
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--bb-border-color);
+}
+
+.docs-pro-editor-preview table th {
+    background: var(--bb-bg-surface-secondary, var(--bb-tertiary-bg));
+}
+
+.docs-pro-editor-preview pre {
+    padding: 1rem;
+    border-radius: 0.85rem;
+    background: #0f172a;
+    color: #e2e8f0;
+    overflow-x: auto;
+}
+
+.docs-pro-editor-preview code {
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.35rem;
+    background: color-mix(in srgb, var(--bb-tertiary-bg) 92%, transparent);
+    color: inherit;
+}
+
+.docs-pro-editor-preview pre code {
+    padding: 0;
+    background: transparent;
+}
+
+.docs-pro-editor-preview blockquote {
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid color-mix(in srgb, var(--bb-primary) 52%, transparent);
+    background: color-mix(in srgb, var(--bb-primary) 8%, var(--bb-bg-surface, var(--bb-body-bg)));
+    color: inherit;
+}
+
+[data-bs-theme='dark'] .docs-pro-editor-tree-button,
+[data-bs-theme='dark'] .docs-pro-editor-tree-static,
+[data-bs-theme='dark'] .docs-pro-editor-tab.is-active,
+[data-bs-theme='dark'] .docs-pro-editor-preview-wrap {
+    box-shadow: none;
+}
+
+[data-bs-theme='dark'] .docs-pro-editor-tree-grip {
+    background:
+        radial-gradient(circle, rgba(209, 213, 219, 0.72) 1px, transparent 1px) 0 0 / 0.4rem 0.4rem;
+}
+
+[data-bs-theme='dark'] .docs-pro-editor-tablist {
+    background: var(--bb-bg-surface-secondary, var(--bb-tertiary-bg));
+}
+
+[data-bs-theme='dark'] .docs-pro-editor-preview table th {
+    background: color-mix(in srgb, var(--bb-bg-surface-secondary, var(--bb-tertiary-bg)) 94%, transparent);
+}
+
+@media (max-width: 991.98px) {
+    .docs-pro-editor-page {
+        max-width: none;
+    }
+
+    .docs-pro-editor-tree-shell {
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+    }
+
+    .docs-pro-editor-tree-button {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .docs-pro-editor-tree-badges {
+        justify-content: flex-start;
+    }
+
+    .docs-pro-editor-textarea,
+    .docs-pro-editor-preview-wrap {
+        min-height: 26rem;
+    }
+
+    .docs-pro-editor-textarea {
+        height: 52vh;
+    }
+
+    .docs-pro-editor-field-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
