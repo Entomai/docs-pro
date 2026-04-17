@@ -5,7 +5,7 @@
     "provider": "Botble\\DocsPro\\Providers\\DocsProServiceProvider",
     "author": "Entomai",
     "url": "https://entomai.com",
-    "version": "1.0.0",
+    "version": "1.1.7",
     "description": "Standalone documentation portal for products with ZIP imports and nested docs.",
     "minimum_core_version": "7.6.3"
 }

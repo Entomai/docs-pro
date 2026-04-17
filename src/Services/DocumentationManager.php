@@ -8,6 +8,7 @@ use Botble\DocsPro\Models\Doc;
 use Botble\DocsPro\Models\DocProduct;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -438,7 +439,6 @@ class DocumentationManager
             ]);
         }
 
-        // Removed title validation block to allow nesting
         if ($document && $document->exists) {
             if ((int) $parent->getKey() === (int) $document->getKey()) {
                 throw ValidationException::withMessages([
@@ -922,10 +922,8 @@ class DocumentationManager
                 'markdown_content' => null,
                 'status' => BaseStatusEnum::PUBLISHED,
                 'is_default' => false,
-                'children' => [],
+                'children' => $this->buildImportNodesFromDirectory($item),
             ];
-
-            $nodes = array_merge($nodes, $this->buildImportNodesFromDirectory($item));
         }
 
         return $nodes;
@@ -1200,7 +1198,7 @@ class DocumentationManager
 
     protected function appendExportNodes(
         ZipArchive $zip,
-        \Illuminate\Support\Collection $childrenByParent,
+        Collection $childrenByParent,
         int|string|null $parentId,
         string $basePath,
         array &$manifest
@@ -1728,7 +1726,7 @@ class DocumentationManager
         return $normalized;
     }
 
-    protected function normalizeEditorTree(array $tree, \Illuminate\Support\Collection $nodesById): array
+    protected function normalizeEditorTree(array $tree, Collection $nodesById): array
     {
         $normalized = [];
 
