@@ -6,6 +6,7 @@ use Botble\Base\Facades\DashboardMenu;
 use Botble\Base\Supports\ServiceProvider;
 use Botble\Base\Traits\LoadAndPublishDataTrait;
 use Botble\DocsPro\Models\DocProduct;
+use Botble\DocsPro\Package\PackageServiceProvider;
 use Botble\DocsPro\Services\DocsPortalService;
 use Botble\DocsPro\Services\DocumentationManager;
 use Botble\Language\Facades\Language;
@@ -22,6 +23,8 @@ class DocsProServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->app->register(PackageServiceProvider::class);
+
         $this
             ->setNamespace('plugins/docs-pro')
             ->loadHelpers()

@@ -5,7 +5,16 @@
     "provider": "Botble\\DocsPro\\Providers\\DocsProServiceProvider",
     "author": "Entomai",
     "url": "https://entomai.com",
-    "version": "1.1.7",
+    "version": "1.1.8",
     "description": "Standalone documentation portal for products with ZIP imports and nested docs.",
-    "minimum_core_version": "7.6.3"
+    "minimum_core_version": "7.6.3",
+    "entomai_updater": {
+        "enabled": true,
+        "is_free": true,
+        "license_prefix": "docs_pro",
+        "server": "https://entomai.com",
+        "api_key": "lb_xkpkkropjh2hanjf3qowaswigsezzoja3y2oqd4b",
+        "documentation_url": "https://entomai.com/docs/docs-pro",
+        "support_url": "https://entomai.com/support"
+    }
 }
