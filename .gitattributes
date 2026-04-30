@@ -1,0 +1,22 @@
+# Keep release archives focused on runtime plugin files.
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/.github export-ignore
+/.env export-ignore
+/.idea export-ignore
+/.vscode export-ignore
+/node_modules export-ignore
+/.phpunit.cache export-ignore
+/.phpunit.result.cache export-ignore
+/test export-ignore
+/tests export-ignore
+/docs-pro export-ignore
+/phpunit.xml export-ignore
+/*.md export-ignore
+/*.zip export-ignore
+/*.log export-ignore
+/npm-debug.log* export-ignore
+/yarn-debug.log* export-ignore
+/yarn-error.log* export-ignore
+/.DS_Store export-ignore
+/Thumbs.db export-ignore
