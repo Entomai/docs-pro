@@ -54,6 +54,66 @@
             return $updateButton.length ? $updateButton.closest('.plugin-item') : $();
         };
 
+        const normalizeVersion = function (version) {
+            return String(version || '').trim().replace(/^[vV]+/, '');
+        };
+
+        const compareVersions = function (left, right) {
+            const leftParts = normalizeVersion(left).split(/[.\-_+]/);
+            const rightParts = normalizeVersion(right).split(/[.\-_+]/);
+            const length = Math.max(leftParts.length, rightParts.length);
+
+            for (let i = 0; i < length; i++) {
+                const a = leftParts[i] || '0';
+                const b = rightParts[i] || '0';
+                const aNumeric = /^\d+$/.test(a);
+                const bNumeric = /^\d+$/.test(b);
+
+                if (aNumeric && bNumeric) {
+                    const diff = parseInt(a, 10) - parseInt(b, 10);
+
+                    if (diff !== 0) {
+                        return diff;
+                    }
+
+                    continue;
+                }
+
+                const diff = a.localeCompare(b);
+
+                if (diff !== 0) {
+                    return diff;
+                }
+            }
+
+            return 0;
+        };
+
+        const installedVersion = function ($pluginCard, plugin) {
+            const $button = $pluginCard.find('button[data-name="' + plugin + '"]').first();
+            const buttonVersion = $button.attr('data-version') || '';
+
+            if (buttonVersion) {
+                return buttonVersion;
+            }
+
+            const match = ($pluginCard.text() || '').match(/\bv([0-9]+(?:[.\-_+][0-9A-Za-z]+)*)\b/);
+
+            return match ? match[1] : '';
+        };
+
+        const updateIsNewerThanInstalled = function ($pluginCard, update) {
+            const latestVersion = update.version || update.latest_version || '';
+
+            if (! latestVersion) {
+                return !! update.has_update;
+            }
+
+            const currentVersion = installedVersion($pluginCard, update.plugin || '');
+
+            return ! currentVersion || compareVersions(latestVersion, currentVersion) > 0;
+        };
+
         const ensureUpdateButton = function ($pluginCard, update) {
             let $button = $pluginCard.find('button[data-name="' + update.plugin + '"]').first();
 
@@ -92,7 +152,7 @@
                 const update = data[key];
                 const $pluginCard = findPluginCard(update.plugin || key);
 
-                if (! $pluginCard.length || ! update.has_update) {
+                if (! $pluginCard.length || ! update.has_update || ! updateIsNewerThanInstalled($pluginCard, update)) {
                     return;
                 }
 

@@ -464,7 +464,18 @@
     const installBaseUrl = @json(Route::has('entomai.private-updater.update') ? route('entomai.private-updater.update', ['plugin' => '__PLUGIN__']) : null);
     const marketplaceBaseUrl = @json(Route::has('plugins.new') ? route('plugins.new') : null);
     const catalogProductBaseUrl = @json($catalogProductBaseUrl ?? null);
-
+    const clearUpdateCaches = function () {
+        [
+            'entomai_private_plugin_update_check_time',
+            'entomai_private_plugin_update_data',
+            'plugin_update_check_time',
+            'plugin_update_data',
+        ].forEach(function (key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {}
+        });
+    };
     const appendLog = function (path, text) {
         const wrap = document.querySelector('[data-entomai-log-wrap="' + path + '"]');
         const log  = document.querySelector('[data-entomai-log="' + path + '"]');
@@ -569,6 +580,10 @@
                 } else if (updateBadge) {
                     updateBadge.style.display = 'none';
                 }
+            }
+
+            if (!data.error && action === 'update') {
+                clearUpdateCaches();
             }
 
             if (data.reload) setTimeout(() => window.location.reload(), 900);

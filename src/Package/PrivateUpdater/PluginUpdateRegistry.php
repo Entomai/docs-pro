@@ -43,6 +43,11 @@ class PluginUpdateRegistry
         $licensePrefix = (string) Arr::get($updater, 'license_prefix', str_replace('-', '_', $path));
 
         $isFree = (bool) Arr::get($updater, 'is_free', false);
+        $manifestProductId = (string) Arr::get($updater, 'product_id', '');
+        $expectedProductId = (string) (
+            config("plugins.$path.general.expected_product_id")
+            ?: Arr::get($updater, 'expected_product_id', $manifestProductId)
+        );
 
         $productId = config("plugins.$path.general.product_id")
             ?: Arr::get($updater, 'product_id');
@@ -58,6 +63,20 @@ class PluginUpdateRegistry
             return null;
         }
 
+        $productIdentityValid = $isFree
+            || $expectedProductId === ''
+            || ((string) $productId !== '' && hash_equals($expectedProductId, (string) $productId));
+
+        $licenseData = (string) setting($licensePrefix.'_client_token', '');
+        $activatedProductId = (string) setting($licensePrefix.'_client_product_id', '');
+
+        if (
+            ! $productIdentityValid
+            || ($activatedProductId !== '' && ! hash_equals($expectedProductId ?: (string) $productId, $activatedProductId))
+        ) {
+            $licenseData = '';
+        }
+
         return [
             'path' => $path,
             'manifest_id' => (string) Arr::get($manifest, 'id', ''),
@@ -70,16 +89,18 @@ class PluginUpdateRegistry
             'version' => (string) Arr::get($manifest, 'version', '0.0.0'),
             'is_free' => $isFree,
             'is_active_in_cms' => in_array($path, get_active_plugins()),
+            'product_identity_valid' => $productIdentityValid,
+            'manifest_product_id' => $manifestProductId,
+            'expected_product_id' => $expectedProductId,
             'product_id' => (string) ($productId ?? ''),
             'server' => rtrim((string) ($server ?? ''), '/'),
             'api_key' => (string) ($apiKey ?? ''),
             'license_prefix' => $licensePrefix,
-            'license_data' => (string) setting($licensePrefix.'_client_token', ''),
+            'license_data' => $licenseData,
             'client_name' => (string) setting($licensePrefix.'_client_name', ''),
             'activation_url' => (string) setting($licensePrefix.'_client_activation_url', url('/')),
             'support_url' => (string) Arr::get($updater, 'support_url', ''),
             'documentation_url' => (string) Arr::get($updater, 'documentation_url', ''),
         ];
     }
-
 }

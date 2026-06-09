@@ -4,26 +4,40 @@ namespace Botble\DocsPro\Package\Http\Controllers;
 
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Http\Controllers\BaseController;
+use Botble\DocsPro\Package\LicenseClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
-use Botble\DocsPro\Package\LicenseClient;
 
 abstract class BaseActivationController extends BaseController
 {
     // ── Adapt these four in your plugin's ClientActivationController ─────────
     protected string $pluginPrefix = '';    // snake_case, e.g. 'translation_pro'
+
     protected string $settingsRoute = '';   // e.g. 'translation-pro.settings'
+
     protected string $callbackRoute = '';   // e.g. 'translation-pro.client-activation.callback'
+
     protected string $translationPath = ''; // e.g. 'plugins/translation-pro::translation-pro'
+
+    protected string $expectedProductId = ''; // hardcoded product id for this plugin, e.g. 'ENTOMAI-TRNS-PRO'
     // ─────────────────────────────────────────────────────────────────────────
 
     protected function getProductId(): string
     {
         return (string) $this->resolveUpdaterValue('product_id', 'product_id', '');
+    }
+
+    protected function getExpectedProductId(): string
+    {
+        if ($this->expectedProductId !== '') {
+            return $this->expectedProductId;
+        }
+
+        return (string) Arr::get($this->readUpdaterBlock(), 'product_id', $this->getProductId());
     }
 
     protected function getLicenseServer(): string
@@ -83,7 +97,8 @@ abstract class BaseActivationController extends BaseController
             $this->getProductId(),
             $this->getLicenseServer(),
             $this->getApiKey(),
-            $this->getPluginName()
+            $this->getPluginName(),
+            $this->getExpectedProductId()
         );
     }
 
@@ -91,6 +106,10 @@ abstract class BaseActivationController extends BaseController
 
     public function start(Request $request)
     {
+        if ($response = $this->guardProductIdentity($request)) {
+            return $response;
+        }
+
         $state = Str::random(40);
         $stateKey = $this->pluginPrefix.'_client_activation_state';
         $urlKey = $this->pluginPrefix.'_client_activation_url';
@@ -130,7 +149,7 @@ abstract class BaseActivationController extends BaseController
 
             return redirect()
                 ->route($this->settingsRoute)
-                ->with('error_msg', trans($this->translationPath.'.activation_error_state_mismatch'));
+                ->with('error_msg', $this->getMessage('activation_error_state_mismatch', 'Security state mismatch. Please try activating again.'));
         }
 
         session()->forget($stateKey);
@@ -140,12 +159,19 @@ abstract class BaseActivationController extends BaseController
 
             return redirect()
                 ->route($this->settingsRoute)
-                ->with('error_msg', trans($this->translationPath.'.activation_error_failed'));
+                ->with('error_msg', $this->getMessage('activation_error_failed', 'Could not activate the plugin. The server returned an error or the request was cancelled.'));
+        }
+
+        if ($response = $this->guardProductIdentity($request, true)) {
+            session()->forget($urlKey);
+
+            return $response;
         }
 
         $settings = setting()
             ->set($this->pluginPrefix.'_client_token', $token)
             ->set($this->pluginPrefix.'_client_license_code', $licenseCode)
+            ->set($this->pluginPrefix.'_client_product_id', $this->getProductId())
             ->set($this->pluginPrefix.'_client_activation_url', session($urlKey, URL::to('/')));
 
         if ($clientEmail) {
@@ -161,11 +187,15 @@ abstract class BaseActivationController extends BaseController
 
         return redirect()
             ->route($this->settingsRoute)
-            ->with('success_msg', trans($this->translationPath.'.activation_success'));
+            ->with('success_msg', $this->getMessage('activation_success', 'Your license has been activated successfully!'));
     }
 
     public function verify(Request $request)
     {
+        if ($response = $this->guardProductIdentity($request, true)) {
+            return $response;
+        }
+
         if ($this->getLicenseClient()->verifyLicense()) {
             $message = 'Your license is verified and active.';
 
@@ -187,6 +217,10 @@ abstract class BaseActivationController extends BaseController
 
     public function deactivate(Request $request)
     {
+        if ($response = $this->guardProductIdentity($request, true)) {
+            return $response;
+        }
+
         if ($this->getLicenseClient()->deactivateLicense()) {
             $this->clearLocalLicenseData();
 
@@ -222,6 +256,10 @@ abstract class BaseActivationController extends BaseController
 
     public function checkUpdate(Request $request)
     {
+        if ($response = $this->guardProductIdentity($request)) {
+            return $response;
+        }
+
         $client = $this->getLicenseClient();
         $update = $client->checkForUpdate();
 
@@ -237,15 +275,17 @@ abstract class BaseActivationController extends BaseController
             return redirect()->route($this->settingsRoute)->with('error_msg', $message);
         }
 
-        $this->storeUpdateState($update);
+        $formattedUpdate = $this->formatUpdatePayload($update, $client);
 
-        if ($update['has_update']) {
-            $version = $update['version'] ?? null;
+        $this->storeUpdateState($formattedUpdate);
+
+        if ($formattedUpdate['has_update']) {
+            $version = $formattedUpdate['version'] ?? null;
             $message = $version ? "An update to version {$version} is available!" : 'An update is available!';
 
             if ($this->wantsJson($request)) {
                 return $this->activationJson(true, $message, [
-                    'update' => $this->formatUpdatePayload($update, $client),
+                    'update' => $formattedUpdate,
                 ]);
             }
 
@@ -256,7 +296,7 @@ abstract class BaseActivationController extends BaseController
 
         if ($this->wantsJson($request)) {
             return $this->activationJson(true, $message, [
-                'update' => $this->formatUpdatePayload($update, $client),
+                'update' => $formattedUpdate,
             ]);
         }
 
@@ -273,6 +313,57 @@ abstract class BaseActivationController extends BaseController
     protected function wantsJson(Request $request): bool
     {
         return $request->ajax() || $request->expectsJson() || $request->wantsJson();
+    }
+
+    protected function getMessage(string $key, string $default): string
+    {
+        $translation = trans($this->translationPath.'.'.$key);
+
+        if ($translation === $this->translationPath.'.'.$key) {
+            return $default;
+        }
+
+        return $translation;
+    }
+
+    protected function productIdentityMatches(): bool
+    {
+        $expected = trim($this->getExpectedProductId());
+        $actual = trim($this->getProductId());
+
+        return $expected === '' || ($actual !== '' && hash_equals($expected, $actual));
+    }
+
+    protected function activatedProductIdentityMatches(): bool
+    {
+        $activated = trim((string) setting($this->pluginPrefix.'_client_product_id', ''));
+        $expected = trim($this->getExpectedProductId());
+
+        return $expected === '' || $activated === '' || hash_equals($expected, $activated);
+    }
+
+    protected function guardProductIdentity(Request $request, bool $clearLocalLicense = false)
+    {
+        if ($this->productIdentityMatches() && $this->activatedProductIdentityMatches()) {
+            return null;
+        }
+
+        if ($clearLocalLicense) {
+            $this->clearLocalLicenseData();
+        }
+
+        $message = sprintf(
+            'Product identity mismatch for %s. Expected %s, configured %s.',
+            $this->getPluginName(),
+            $this->getExpectedProductId() ?: 'unknown',
+            $this->getProductId() ?: 'unknown'
+        );
+
+        if ($this->wantsJson($request)) {
+            return $this->activationJson(false, $message, ['activated' => false, 'reload' => true], 422);
+        }
+
+        return redirect()->route($this->settingsRoute)->with('error_msg', $message);
     }
 
     protected function storeUpdateState(array $update): void
@@ -294,6 +385,7 @@ abstract class BaseActivationController extends BaseController
         setting()->forceDelete([
             "{$p}_client_token",
             "{$p}_client_license_code",
+            "{$p}_client_product_id",
             "{$p}_client_email",
             "{$p}_client_name",
             "{$p}_client_activation_url",

@@ -12,7 +12,7 @@ class PluginUpdateClient
     public function check(Collection $plugins, bool $force = false): array
     {
         $plugins = $plugins
-            ->filter(fn (array $plugin): bool => filled($plugin['api_key'] ?? null))
+            ->filter(fn (array $plugin): bool => ! ($plugin['is_free'] ?? false) && filled($plugin['api_key'] ?? null) && ($plugin['product_identity_valid'] ?? true))
             ->values();
 
         if ($plugins->isEmpty()) {

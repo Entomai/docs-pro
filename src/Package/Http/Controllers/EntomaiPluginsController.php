@@ -3,13 +3,12 @@
 namespace Botble\DocsPro\Package\Http\Controllers;
 
 use Botble\Base\Http\Controllers\BaseController;
+use Botble\DocsPro\Package\PrivateUpdater\PluginUpdateRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
-use Botble\DocsPro\Package\PrivateUpdater\PluginUpdateRegistry;
 use Throwable;
 
 class EntomaiPluginsController extends BaseController
@@ -18,7 +17,7 @@ class EntomaiPluginsController extends BaseController
     {
         $this->pageTitle('Entomai Plugins');
 
-        $registry = new PluginUpdateRegistry();
+        $registry = new PluginUpdateRegistry;
         $allPlugins = $registry->plugins();
 
         $cards = $allPlugins->map(function (array $plugin): array {
@@ -86,15 +85,16 @@ class EntomaiPluginsController extends BaseController
         // Resolve screenshot_url for each card
         $cards = array_map(function (array $card): array {
             $screenshotAsset = "vendor/core/plugins/{$card['path']}/screenshot.png";
-            $screenshotPath = plugin_path($card['path']) . '/screenshot.png';
+            $screenshotPath = plugin_path($card['path']).'/screenshot.png';
 
             if (File::exists(public_path($screenshotAsset))) {
                 $card['screenshot_url'] = asset($screenshotAsset);
             } elseif (File::exists($screenshotPath)) {
-                $card['screenshot_url'] = 'data:image/png;base64,' . base64_encode(File::get($screenshotPath));
+                $card['screenshot_url'] = 'data:image/png;base64,'.base64_encode(File::get($screenshotPath));
             } else {
                 $card['screenshot_url'] = null;
             }
+
             return $card;
         }, $cards);
 
@@ -120,7 +120,7 @@ class EntomaiPluginsController extends BaseController
 
     public function catalog(Request $request): JsonResponse
     {
-        $registry = new PluginUpdateRegistry();
+        $registry = new PluginUpdateRegistry;
 
         $plugin = $registry->plugins()
             ->sortByDesc('is_free')
@@ -151,10 +151,9 @@ class EntomaiPluginsController extends BaseController
         }
     }
 
-
     public function catalogProduct(int $id): JsonResponse
     {
-        $registry = new PluginUpdateRegistry();
+        $registry = new PluginUpdateRegistry;
 
         $plugin = $registry->plugins()
             ->sortByDesc('is_free')
@@ -165,7 +164,7 @@ class EntomaiPluginsController extends BaseController
         }
 
         try {
-            $url = rtrim($plugin['server'], '/') . '/api/external/catalog/' . $id;
+            $url = rtrim($plugin['server'], '/').'/api/external/catalog/'.$id;
 
             $response = Http::withHeaders([
                 'X-API-KEY' => $plugin['api_key'],
@@ -183,6 +182,7 @@ class EntomaiPluginsController extends BaseController
             return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
     protected function maskLicenseCode(string $code): string
     {
         if (strlen($code) <= 4) {

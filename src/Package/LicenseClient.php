@@ -20,18 +20,22 @@ class LicenseClient
 
     protected string $version;
 
+    protected string $expectedProductId;
+
     public function __construct(
         string $pluginPrefix,
         string $productId,
         string $apiUrl,
         string $apiKey,
-        string $pluginName
+        string $pluginName,
+        string $expectedProductId = ''
     ) {
         $this->pluginPrefix = $pluginPrefix;
         $this->productId = $productId;
         $this->apiUrl = rtrim($apiUrl, '/');
         $this->apiKey = $apiKey;
         $this->pluginName = $pluginName;
+        $this->expectedProductId = $expectedProductId !== '' ? $expectedProductId : $productId;
         $this->version = $this->resolvePluginVersion();
     }
 
@@ -77,6 +81,15 @@ class LicenseClient
 
     public function verifyLicense(): bool
     {
+        if (! $this->productIdentityMatches()) {
+            info("[Entomai] Product identity mismatch for {$this->pluginName}", [
+                'expected_product_id' => $this->expectedProductId,
+                'configured_product_id' => $this->productId,
+            ]);
+
+            return false;
+        }
+
         $token = setting("{$this->pluginPrefix}_client_token");
 
         if (! $token) {
@@ -93,6 +106,7 @@ class LicenseClient
 
             if ($response->successful()) {
                 return $response->json('status') === true
+                    && $this->responseProductMatches($response->json() ?: [])
                     && (
                         $response->json('is_active') === true
                         || $response->json('data.is_active') === true
@@ -107,6 +121,10 @@ class LicenseClient
 
     public function deactivateLicense(): bool
     {
+        if (! $this->productIdentityMatches()) {
+            return false;
+        }
+
         $token = setting("{$this->pluginPrefix}_client_token");
 
         if (! $token) {
@@ -139,6 +157,20 @@ class LicenseClient
 
     public function checkForUpdate(): array
     {
+        if (! $this->productIdentityMatches()) {
+            return [
+                'success' => false,
+                'has_update' => false,
+                'current_version' => $this->version,
+                'message' => sprintf(
+                    'Product identity mismatch for %s. Expected %s, configured %s.',
+                    $this->pluginName,
+                    $this->expectedProductId ?: 'unknown',
+                    $this->productId ?: 'unknown'
+                ),
+            ];
+        }
+
         try {
             $response = Http::withHeaders($this->getHeaders())
                 ->post("{$this->apiUrl}/api/external/update/check", [
@@ -195,5 +227,24 @@ class LicenseClient
     protected function normalizeVersion(string $version): string
     {
         return ltrim(trim($version), 'vV');
+    }
+
+    protected function productIdentityMatches(): bool
+    {
+        $expected = trim($this->expectedProductId);
+        $actual = trim($this->productId);
+
+        return $expected === '' || ($actual !== '' && hash_equals($expected, $actual));
+    }
+
+    protected function responseProductMatches(array $payload): bool
+    {
+        $responseProductId = $payload['product_id'] ?? ($payload['data']['product_id'] ?? null);
+
+        if (! is_scalar($responseProductId) || trim((string) $responseProductId) === '') {
+            return true;
+        }
+
+        return hash_equals(trim($this->expectedProductId), trim((string) $responseProductId));
     }
 }

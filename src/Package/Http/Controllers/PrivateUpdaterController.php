@@ -3,12 +3,12 @@
 namespace Botble\DocsPro\Package\Http\Controllers;
 
 use Botble\Base\Http\Controllers\BaseController;
-use Botble\PluginManagement\Services\PluginService;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Botble\DocsPro\Package\PrivateUpdater\PluginUpdateClient;
 use Botble\DocsPro\Package\PrivateUpdater\PluginUpdateInstaller;
 use Botble\DocsPro\Package\PrivateUpdater\PluginUpdateRegistry;
+use Botble\PluginManagement\Services\PluginService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PrivateUpdaterController extends BaseController
 {

@@ -31,10 +31,17 @@ class PluginUpdateInstaller
             ], 422);
         }
 
+        if (! ($plugin['product_identity_valid'] ?? true)) {
+            return response()->json([
+                'error' => true,
+                'message' => sprintf('The configured product id does not match %s.', $plugin['name']),
+            ], 422);
+        }
+
         try {
-            return $pluginService->updatePlugin($plugin['path'], function () use ($plugin, $version, $pluginService): JsonResponse {
+            return $pluginService->updatePlugin($plugin['path'], function () use ($plugin, $update, $version, $pluginService): JsonResponse {
                 $workPath = storage_path('app/entomai-plugin-updater/'.Str::slug($plugin['path']).'/'.now()->format('YmdHis'));
-                $zipPath = $this->downloadPackage($plugin, $version, $workPath);
+                $zipPath = $this->downloadPackage($plugin, $update, $version, $workPath);
                 $extractPath = $workPath.'/extract';
 
                 $this->validateZip($zipPath);
@@ -77,7 +84,12 @@ class PluginUpdateInstaller
                 return response()->json([
                     'error' => false,
                     'message' => sprintf('%s was updated to version %s.', $plugin['name'], $version),
-                    'data' => ['plugin' => $plugin['path'], 'version' => $version],
+                    'reload' => true,
+                    'data' => [
+                        'plugin' => $plugin['path'],
+                        'version' => $version,
+                        'update_id' => $update['update_id'] ?? null,
+                    ],
                 ]);
             });
         } catch (Throwable $e) {
@@ -85,11 +97,12 @@ class PluginUpdateInstaller
         }
     }
 
-    protected function downloadPackage(array $plugin, string $version, string $workPath): string
+    protected function downloadPackage(array $plugin, array $update, string $version, string $workPath): string
     {
         File::ensureDirectoryExists($workPath, 0775);
 
         $zipPath = $workPath.'/'.$plugin['path'].'-'.$this->normalizeVersion($version).'.zip';
+        $downloadIdentifier = (string) ($update['update_id'] ?? '') ?: $version;
 
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
@@ -104,10 +117,12 @@ class PluginUpdateInstaller
             ->withoutVerifying()
             ->timeout(300)
             ->sink($zipPath)
-            ->post($plugin['server'].'/api/external/update/'.rawurlencode($version).'/download/main', [
+            ->post($plugin['server'].'/api/external/update/'.rawurlencode($downloadIdentifier).'/download/main', [
                 'product_id' => $plugin['product_id'],
                 'license_data' => $plugin['license_data'],
                 'client_name' => $plugin['client_name'] ?: null,
+                'version' => $version,
+                'update_id' => $update['update_id'] ?? null,
             ]);
 
         if (! $response->successful()) {
@@ -180,20 +195,25 @@ class PluginUpdateInstaller
 
     protected function packageMatchesPlugin(array $manifest, array $plugin, string $expectedVersion): bool
     {
-        $matches = false;
-
         foreach (['manifest_id' => 'id', 'namespace' => 'namespace', 'provider' => 'provider'] as $pluginKey => $manifestKey) {
             if (
                 filled($plugin[$pluginKey] ?? null)
-                && filled($manifest[$manifestKey] ?? null)
-                && $plugin[$pluginKey] === $manifest[$manifestKey]
+                && (
+                    ! filled($manifest[$manifestKey] ?? null)
+                    || $plugin[$pluginKey] !== $manifest[$manifestKey]
+                )
             ) {
-                $matches = true;
-                break;
+                return false;
             }
         }
 
-        if (! $matches) {
+        $expectedProductId = (string) ($plugin['expected_product_id'] ?? $plugin['manifest_product_id'] ?? $plugin['product_id'] ?? '');
+        $manifestProductId = (string) Arr::get($manifest, 'entomai_updater.product_id', '');
+
+        if (
+            $expectedProductId !== ''
+            && ($manifestProductId === '' || ! hash_equals($expectedProductId, $manifestProductId))
+        ) {
             return false;
         }
 
