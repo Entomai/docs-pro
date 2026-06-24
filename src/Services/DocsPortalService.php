@@ -31,6 +31,19 @@ class DocsPortalService
         $products = $this->getPublishedProducts();
         $activeProduct = $products->firstWhere('slug', $productSlug);
 
+        // When a translated product exists the language-filtered list may not include the
+        // original-language product. Fall back to searching across all published products so
+        // that URLs using the original slug still resolve instead of returning 404.
+        if (! $activeProduct && $this->supportsMultipleLanguages()) {
+            $activeProduct = $this->makePublishedProductsQuery()
+                ->where('slug', $productSlug)
+                ->first();
+
+            if ($activeProduct && ! $products->contains(fn ($p) => $p->getKey() === $activeProduct->getKey())) {
+                $products = collect([$activeProduct])->concat($products);
+            }
+        }
+
         if (! $activeProduct) {
             throw new NotFoundHttpException;
         }
@@ -84,12 +97,54 @@ class DocsPortalService
             ? $routableDocuments->firstWhere('slug_path', trim($requestedPath, '/'))
             : $this->resolveDefaultDocument($routableDocuments);
 
+        // When the requested path isn't found in the current product (e.g. the translated
+        // product shell has no docs yet), try the same slug_path across the origin-language
+        // product so the user sees content instead of a 404.
+        if ($requestedPath && ! $activeDocument && $this->supportsMultipleLanguages()) {
+            $originProduct = $this->resolveOriginProduct($product);
+
+            if ($originProduct && $originProduct->getKey() !== $product->getKey()) {
+                $originDocuments = Doc::query()
+                    ->where('product_id', $originProduct->getKey())
+                    ->where('status', BaseStatusEnum::PUBLISHED)
+                    ->where('node_type', Doc::NODE_TYPE_DOC)
+                    ->get();
+
+                $activeDocument = $originDocuments->firstWhere('slug_path', trim($requestedPath, '/'));
+
+                if ($activeDocument) {
+                    $product = $originProduct;
+
+                    if (! $products->contains(fn ($p) => $p->getKey() === $product->getKey())) {
+                        $products = collect([$product])->concat($products);
+                    }
+
+                    $flatDocuments = $this->sortHierarchically(
+                        Doc::query()
+                            ->where('product_id', $originProduct->getKey())
+                            ->where(function ($query): void {
+                                $query
+                                    ->where('status', BaseStatusEnum::PUBLISHED)
+                                    ->orWhereIn('node_type', [
+                                        Doc::NODE_TYPE_TITLE,
+                                        Doc::NODE_TYPE_SEPARATOR,
+                                    ]);
+                            })
+                            ->orderBy('sort_order')
+                            ->orderBy('name')
+                            ->get()
+                    );
+                    $routableDocuments = $flatDocuments->filter(fn (Doc $document): bool => $document->isDoc())->values();
+                }
+            }
+        }
+
         if ($requestedPath && ! $activeDocument) {
             throw new NotFoundHttpException;
         }
 
         $tree = $this->buildTree($flatDocuments, $product, $activeDocument);
-        $activeTrail = $activeDocument ? $this->collectAncestorIds($activeDocument, $documents->keyBy('id')) : [];
+        $activeTrail = $activeDocument ? $this->collectAncestorIds($activeDocument, $flatDocuments->keyBy('id')) : [];
         $navigation = $this->resolvePreviousAndNext($routableDocuments, $activeDocument);
 
         return [
@@ -331,6 +386,34 @@ class DocsPortalService
             })
             ->values()
             ->all();
+    }
+
+    protected function resolveOriginProduct(DocProduct $product): ?DocProduct
+    {
+        $origin = $product->languageMetas()->value('lang_meta_origin');
+
+        if (! $origin) {
+            return null;
+        }
+
+        $defaultCode = Language::getDefaultLocaleCode();
+
+        $id = DocProduct::query()
+            ->select('docs_pros.id')
+            ->join('language_meta', function ($join): void {
+                $join
+                    ->on('language_meta.reference_id', '=', 'docs_pros.id')
+                    ->where('language_meta.reference_type', '=', DocProduct::class);
+            })
+            ->where('language_meta.lang_meta_origin', $origin)
+            ->where('language_meta.lang_meta_code', $defaultCode)
+            ->value('docs_pros.id');
+
+        if (! $id) {
+            return null;
+        }
+
+        return DocProduct::query()->published()->whereKey($id)->first();
     }
 
     protected function resolveTranslatedProduct(DocProduct $product, string $targetLanguageCode): ?DocProduct
